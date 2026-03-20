@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java:*)",
+      "Read(//usr/lib/**)",
+      "Bash(apt list:*)",
+      "Bash(sdk list:*)",
+      "Bash(sudo apt:*)",
+      "Bash(bash)",
+      "Bash(mkdir -p ~/java)",
+      "Read(//home/s_mongkolsri/java/**)",
+      "Bash(tar xzf:*)",
+      "Bash(export JAVA_HOME=~/java/jdk-11.0.21+9)",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")"
+    ]
+  }
+}
