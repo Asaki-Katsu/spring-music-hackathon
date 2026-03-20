@@ -7,6 +7,50 @@ This application has been built to store the same domain objects in one of a var
 
 The application use Spring Java configuration and [bean profiles](http://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-profiles.html) to configure the application and the connection objects needed to use the persistence stores. It also uses the [Spring Cloud Connectors](http://cloud.spring.io/spring-cloud-connectors/) library to inspect the environment when running on Cloud Foundry. See the [Cloud Foundry documentation](http://docs.cloudfoundry.org/buildpacks/java/spring-service-bindings.html) for details on configuring a Spring application for Cloud Foundry.
 
+# Team <name>
+
+## Participants
+- Boom Mongkolsri (PM)
+- Sutinun Imjongjairak (Infra)
+- Mongkhon Sinsirimongkhon (Dev)
+- Thanakrit Junhom (Tester)
+- Charan Raghupatruni (Dev)
+- Diego S. Guebel (Dev)
+
+## Scenario
+Scenario 1 — Code Modernization
+
+## What We Built
+2-3 paragraphs. What exists in this repo that didn't exist 3 hours ago.
+What runs, what's scaffolding, what's faked.
+
+## Challenges Attempted
+| # | Challenge | Status | Notes |
+|---|---|---|---|
+| 1 | The Stories | done / partial / skipped | |
+| 2 | The Patient | skipped
+| 3 | The Map | | |
+| 4 | The Pin | | |
+| 5 | The Cut | | |
+| 6 | The Fence | | |
+| 7 | The Contract | | |
+| 8 | The Pipeline | | |
+| 9 | The Second Cut | | |
+| 10 | The Weekend | | |
+
+## Key Decisions
+Biggest calls you made and why. Link into `/decisions` for the full ADRs.
+
+## How to Run It
+Exact commands. Assume the reader has Docker and nothing else.
+
+## If We Had Another Day
+What you'd tackle next, in priority order. Be honest about what's held
+together with tape.
+
+## How We Used Claude Code
+What worked. What surprised you. Where it saved the most time.
+
 ## Building
 
 This project requires Java 8 or later to compile.
