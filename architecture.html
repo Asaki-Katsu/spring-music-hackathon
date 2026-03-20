@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Music — Backend Architecture</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-alt: #334155;
+      --border: #475569;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --accent: #38bdf8;
+      --accent-dim: #0ea5e9;
+      --green: #4ade80;
+      --green-dim: #166534;
+      --orange: #fb923c;
+      --orange-dim: #9a3412;
+      --pink: #f472b6;
+      --pink-dim: #9d174d;
+      --purple: #a78bfa;
+      --purple-dim: #5b21b6;
+      --red: #f87171;
+      --yellow: #facc15;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      color: var(--text-dim);
+      font-size: 1.1rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-key { background: var(--accent-dim); color: #fff; }
+    .badge-profile { background: var(--purple-dim); color: var(--purple); }
+    .badge-endpoint { background: var(--green-dim); color: var(--green); }
+
+    /* ---- overview diagram ---- */
+    .diagram {
+      max-width: 1100px;
+      margin: 0 auto 3rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .layer {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      position: relative;
+    }
+
+    .layer-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .layer-content {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    /* gap fallback for Safari <14.1 */
+    @supports not (gap: 1rem) {
+      .layer-content > * { margin: 0.5rem; }
+      .flow-steps > * { margin: 0.25rem; }
+    }
+
+    .box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      min-width: 180px;
+      text-align: center;
+      -webkit-transition: transform 0.15s, border-color 0.15s;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .box:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .box h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .box p { font-size: 0.8rem; color: var(--text-dim); }
+
+    .highlight-box {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+    }
+
+    .arrow {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 1.6rem;
+      line-height: 1;
+      padding: 0.25rem 0;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    /* ---- sections ---- */
+    .content { max-width: 1100px; margin: 0 auto; }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    section h2 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    section h2 .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .callout {
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    .callout strong { color: var(--accent); }
+
+    .callout-warn {
+      background: rgba(251, 146, 60, 0.08);
+      border-left-color: var(--orange);
+    }
+
+    .callout-warn strong { color: var(--orange); }
+
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
+      background: var(--bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .kw { color: var(--pink); }
+    .type { color: var(--accent); }
+    .str { color: var(--green); }
+    .cmt { color: var(--text-dim); font-style: italic; }
+    .ann { color: var(--yellow); }
+    .fn { color: var(--purple); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.6rem 1rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .method { font-weight: 700; }
+    .get { color: var(--green); }
+    .put { color: var(--orange); }
+    .post { color: var(--accent); }
+    .delete { color: var(--red); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .layer-content { flex-direction: column; align-items: center; }
+      header h1 { font-size: 1.8rem; }
+    }
+
+    .flow-steps {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 1rem 0;
+    }
+
+    .flow-step {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .flow-arrow {
+      color: var(--text-dim);
+      font-size: 1.2rem;
+    }
+
+    .db-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .db-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    .db-card .db-name { font-weight: 700; margin-bottom: 0.2rem; }
+    .db-card .db-type { color: var(--text-dim); font-size: 0.75rem; }
+
+    .tag {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin: 0.15rem;
+    }
+
+    .tag-jpa { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+    .tag-mongo { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+    .tag-redis { background: rgba(251, 146, 60, 0.15); color: var(--orange); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Spring Music &mdash; Backend Architecture</h1>
+  <p>Spring Boot 2.4.0 &middot; Java 8+ &middot; Multi-database persistence via Spring Profiles</p>
+</header>
+
+<!-- ===== HIGH-LEVEL DIAGRAM ===== -->
+<div class="diagram">
+  <div class="layer">
+    <div class="layer-label">Client Layer</div>
+    <div class="layer-content">
+      <div class="box">
+        <h3>AngularJS SPA</h3>
+        <p>Bootstrap 3 frontend served from /static</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC;</div>
+
+  <div class="layer">
+    <div class="layer-label">REST API Layer</div>
+    <div class="layer-content">
+      <div class="box highlight-box">
+        <h3>AlbumController</h3>
+        <p>CRUD endpoints at <code>/albums</code></p>
+      </div>
+      <div class="box">
+        <h3>InfoController</h3>
+        <p>App info at <code>/appinfo</code></p>
+      </div>
+      <div class="box">
+        <h3>ErrorController</h3>
+        <p>Test endpoints at <code>/errors</code></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC;</div>
+
+  <div class="layer">
+    <div class="layer-label">Abstraction Layer &nbsp;<span class="badge badge-key">Key Design</span></div>
+    <div class="layer-content">
+      <div class="box highlight-box" style="min-width:320px;">
+        <h3>CrudRepository&lt;Album, String&gt;</h3>
+        <p>Single interface — all controllers depend only on this</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC;</div>
+
+  <div class="layer">
+    <div class="layer-label">Repository Implementations &nbsp;<span class="badge badge-profile">Profile-Activated</span></div>
+    <div class="layer-content">
+      <div class="box">
+        <h3>JpaAlbumRepository</h3>
+        <p><span class="tag tag-jpa">JPA</span> Default / mysql / postgres</p>
+      </div>
+      <div class="box">
+        <h3>MongoAlbumRepository</h3>
+        <p><span class="tag tag-mongo">MongoDB</span> mongodb profile</p>
+      </div>
+      <div class="box">
+        <h3>RedisAlbumRepository</h3>
+        <p><span class="tag tag-redis">Redis</span> redis profile &middot; Custom impl</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC;</div>
+
+  <div class="layer">
+    <div class="layer-label">Database Layer</div>
+    <div class="db-grid">
+      <div class="db-card"><div class="db-name">H2</div><div class="db-type">In-Memory (default)</div></div>
+      <div class="db-card"><div class="db-name">MySQL</div><div class="db-type">JPA</div></div>
+      <div class="db-card"><div class="db-name">PostgreSQL</div><div class="db-type">JPA</div></div>
+      <div class="db-card"><div class="db-name">Oracle</div><div class="db-type">JPA</div></div>
+      <div class="db-card"><div class="db-name">SQL Server</div><div class="db-type">JPA</div></div>
+      <div class="db-card"><div class="db-name">MongoDB</div><div class="db-type">Document Store</div></div>
+      <div class="db-card"><div class="db-name">Redis</div><div class="db-type">Key-Value / Hash</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETAILED SECTIONS ===== -->
+<div class="content">
+
+  <!-- Profile-based DB Selection -->
+  <section>
+    <h2><span class="icon" style="background:var(--accent-dim);color:#fff;">&#9881;</span> Profile-Based Database Selection</h2>
+    <div class="callout">
+      <strong>Core mechanism:</strong> <code>SpringApplicationContextInitializer</code> controls which database backend is active.
+      It maps Spring profiles to service tags, validates that only one profile is active, and disables irrelevant auto-configurations.
+    </div>
+
+    <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem;">Startup Flow</h3>
+    <div class="flow-steps">
+      <div class="flow-step">1. Validate single profile</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">2. Detect CF services <em>(if on CF)</em></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">3. Activate matching profile</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">4. Exclude unused auto-configs</div>
+    </div>
+
+    <h3 style="margin: 1.25rem 0 0.5rem; font-size: 1rem;">Auto-Configuration Exclusion Matrix</h3>
+    <table>
+      <thead>
+        <tr><th>Active Profile</th><th>Excluded Auto-Configurations</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>redis</code></td>
+          <td>DataSourceAutoConfiguration, HibernateJpaAutoConfiguration, MongoAutoConfiguration, MongoDataAutoConfiguration</td>
+        </tr>
+        <tr>
+          <td><code>mongodb</code></td>
+          <td>DataSourceAutoConfiguration, HibernateJpaAutoConfiguration, RedisAutoConfiguration, RedisRepositoriesAutoConfiguration</td>
+        </tr>
+        <tr>
+          <td><em>JPA (default)</em></td>
+          <td>MongoAutoConfiguration, MongoDataAutoConfiguration, RedisAutoConfiguration, RedisRepositoriesAutoConfiguration</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warn">
+      <strong>Constraint:</strong> Only <strong>one</strong> database profile may be active at a time. Activating multiple profiles throws an <code>IllegalStateException</code>.
+    </div>
+  </section>
+
+  <!-- REST API -->
+  <section>
+    <h2><span class="icon" style="background:var(--green-dim);color:var(--green);">&#8644;</span> REST API — AlbumController</h2>
+    <p style="margin-bottom: 0.75rem; color: var(--text-dim);">
+      The controller depends solely on <code>CrudRepository&lt;Album, String&gt;</code> — it is completely unaware of which database is in use.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method get">GET</span></td><td><code>/albums</code></td><td>List all albums</td></tr>
+        <tr><td><span class="method put">PUT</span></td><td><code>/albums</code></td><td>Create a new album</td></tr>
+        <tr><td><span class="method post">POST</span></td><td><code>/albums</code></td><td>Update an existing album</td></tr>
+        <tr><td><span class="method get">GET</span></td><td><code>/albums/{id}</code></td><td>Get album by ID</td></tr>
+        <tr><td><span class="method delete">DELETE</span></td><td><code>/albums/{id}</code></td><td>Delete album by ID</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Persistence Layer -->
+  <section>
+    <h2><span class="icon" style="background:var(--purple-dim);color:var(--purple);">&#9776;</span> Persistence Layer</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3 style="margin-bottom: 0.5rem;">Album Entity</h3>
+        <pre><code><span class="ann">@Entity</span>
+<span class="kw">public class</span> <span class="type">Album</span> {
+    <span class="ann">@Id</span>
+    <span class="ann">@GeneratedValue</span>(generator = <span class="str">"randomId"</span>)
+    <span class="ann">@GenericGenerator</span>(name = <span class="str">"randomId"</span>,
+        strategy = <span class="str">"...RandomIdGenerator"</span>)
+    <span class="ann">@Column</span>(length = <span class="str">40</span>)
+    <span class="kw">private</span> <span class="type">String</span> id;
+
+    <span class="kw">private</span> <span class="type">String</span> title;
+    <span class="kw">private</span> <span class="type">String</span> artist;
+    <span class="kw">private</span> <span class="type">String</span> releaseYear;
+    <span class="kw">private</span> <span class="type">String</span> genre;
+    <span class="kw">private</span> <span class="type">int</span> trackCount;
+    <span class="kw">private</span> <span class="type">String</span> albumId;
+}</code></pre>
+        <p style="font-size:0.8rem; color:var(--text-dim);">Uses <code>RandomIdGenerator</code> (UUID) for cross-backend ID compatibility.</p>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom: 0.5rem;">Repository Activation</h3>
+        <pre><code><span class="cmt">// JPA — active when NOT mongo or redis</span>
+<span class="ann">@Repository</span>
+<span class="ann">@Profile</span>({<span class="str">"!mongodb"</span>, <span class="str">"!redis"</span>})
+<span class="kw">public interface</span> <span class="type">JpaAlbumRepository</span>
+    <span class="kw">extends</span> <span class="type">JpaRepository</span>&lt;<span class="type">Album</span>, <span class="type">String</span>&gt; {}
+
+<span class="cmt">// MongoDB — only with mongodb profile</span>
+<span class="ann">@Repository</span>
+<span class="ann">@Profile</span>(<span class="str">"mongodb"</span>)
+<span class="kw">public interface</span> <span class="type">MongoAlbumRepository</span>
+    <span class="kw">extends</span> <span class="type">MongoRepository</span>&lt;<span class="type">Album</span>, <span class="type">String</span>&gt; {}
+
+<span class="cmt">// Redis — custom CrudRepository impl</span>
+<span class="ann">@Repository</span>
+<span class="ann">@Profile</span>(<span class="str">"redis"</span>)
+<span class="kw">public class</span> <span class="type">RedisAlbumRepository</span>
+    <span class="kw">implements</span> <span class="type">CrudRepository</span>&lt;<span class="type">Album</span>, <span class="type">String</span>&gt; {
+    <span class="cmt">// Uses RedisTemplate HashOperations</span>
+    <span class="cmt">// All albums stored in hash "albums"</span>
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Why Redis is special:</strong> Redis doesn't have a Spring Data Repository abstraction, so <code>RedisAlbumRepository</code> manually implements <code>CrudRepository</code>
+      using <code>HashOperations&lt;String, String, Album&gt;</code>. Albums are stored as a Redis hash under the key <code>"albums"</code>,
+      with each album's ID as the hash field. A custom <code>RedisConfig</code> sets up Jackson JSON serialization.
+    </div>
+  </section>
+
+  <!-- Data Seeding -->
+  <section>
+    <h2><span class="icon" style="background:var(--orange-dim);color:var(--orange);">&#9733;</span> Data Seeding — AlbumRepositoryPopulator</h2>
+    <p>Listens for <code>ApplicationReadyEvent</code> and populates the repository from <code>albums.json</code> when it's empty.</p>
+
+    <div class="flow-steps" style="margin-top: 1rem;">
+      <div class="flow-step">App starts</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">ApplicationReadyEvent fires</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Check <code>count() == 0</code></div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Deserialize albums.json</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step">Save all to active repository</div>
+    </div>
+
+    <div class="callout">
+      <strong>Decoupled lookup:</strong> Uses <code>BeanFactoryUtils.beanOfTypeIncludingAncestors()</code> to dynamically discover whichever <code>CrudRepository</code> bean is active — no hard dependency on a specific implementation.
+    </div>
+  </section>
+
+  <!-- Application Entry Point -->
+  <section>
+    <h2><span class="icon" style="background:var(--pink-dim);color:var(--pink);">&#9654;</span> Application Entry Point</h2>
+    <pre><code><span class="ann">@SpringBootApplication</span>
+<span class="kw">public class</span> <span class="type">Application</span> {
+    <span class="kw">public static void</span> <span class="fn">main</span>(<span class="type">String</span>[] args) {
+        <span class="kw">new</span> <span class="type">SpringApplicationBuilder</span>(<span class="type">Application</span>.<span class="kw">class</span>)
+            .<span class="fn">initializers</span>(<span class="kw">new</span> <span class="type">SpringApplicationContextInitializer</span>())  <span class="cmt">// profile setup</span>
+            .<span class="fn">listeners</span>(<span class="kw">new</span> <span class="type">AlbumRepositoryPopulator</span>())          <span class="cmt">// data seeding</span>
+            .<span class="fn">application</span>()
+            .<span class="fn">run</span>(args);
+    }
+}</code></pre>
+    <p style="margin-top: 0.75rem; color: var(--text-dim); font-size: 0.9rem;">
+      The initializer runs <strong>before</strong> the Spring context is created (profile &amp; auto-config setup),
+      while the populator runs <strong>after</strong> the context is ready (data seeding).
+    </p>
+  </section>
+
+  <!-- Cloud Foundry -->
+  <section>
+    <h2><span class="icon" style="background:var(--surface-alt);color:var(--text);">&#9729;</span> Cloud Foundry Integration</h2>
+    <p>When deployed to Cloud Foundry, the app uses <strong>Java CFEnv 2.1.2</strong> to automatically detect bound services.</p>
+    <table>
+      <thead>
+        <tr><th>Service Tag</th><th>Activated Profile</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>mongodb</code></td><td>mongodb</td></tr>
+        <tr><td><code>postgres</code></td><td>postgres</td></tr>
+        <tr><td><code>mysql</code></td><td>mysql</td></tr>
+        <tr><td><code>redis</code></td><td>redis</td></tr>
+        <tr><td><code>oracle</code></td><td>oracle</td></tr>
+        <tr><td><code>sqlserver</code></td><td>sqlserver</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 0.75rem; color: var(--text-dim); font-size: 0.9rem;">
+      <code>InfoController</code> exposes <code>GET /appinfo</code> to inspect active profiles and bound service names at runtime.
+    </p>
+  </section>
+
+</div>
+
+<footer style="text-align:center; padding: 2rem 0 1rem; color: var(--text-dim); font-size: 0.8rem;">
+  Spring Music Backend Architecture &middot; Spring Boot 2.4.0 &middot; Gradle 6.7 &middot; Java 8+
+</footer>
+
+</body>
+</html>
