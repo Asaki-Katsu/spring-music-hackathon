@@ -20,4 +20,4 @@ build/
 *.log*
 /classes/
 
-.local.*
+*.local.*
